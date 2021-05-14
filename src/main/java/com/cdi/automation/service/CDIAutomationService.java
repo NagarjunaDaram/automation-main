@@ -16,6 +16,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +25,8 @@ import org.springframework.web.client.RestTemplate;
 
 import com.cdi.automation.model.ExcelDataModel;
 import com.cdi.automation.util.FlatMapUtil;
+import com.cdi.automation.util.GetJsonNode;
+import com.cdi.automation.util.TestReport;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -31,6 +34,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
+
 @Service
 public class CDIAutomationService {
 	
@@ -40,9 +44,24 @@ public class CDIAutomationService {
 	
 	@Value("${masterdatasheet}")
 	public String file_path;
+	
+	@Value("${jsonfile}")
+	public String jsonfile_path;
+	
+	@Value("${EnterpriseWorksheet}")
+	public String EnterpriseWorksheet;
+	
+	@Value("${OrganizationWorksheet}")
+	public String OrganizationWorksheet;
+	
+	@Value("${SubscriptionWorkSheet}")
+	public String SubscriptionWorkSheet;
+	
+	@Value("${MasterDataSheet}")
+	public String MasterData;
 
 	
-	public  String comparejson() {
+	public  String functionaltest() {
 		String response =null;
 		logger.info("====================In Service========================");
 		try {
@@ -58,13 +77,12 @@ public class CDIAutomationService {
 	
 	
 	
-	public void  readExcel() throws IOException {
+	public void  readExcel() throws Exception {
 		
 		
 		//InputStream	inputStream = null;
-	    String sheetName = "Master Data";
-	    //String file_path = "D:\\Home\\Code\\Resource\\subscription.xlsx ";
-	    // File initialFile = new File("src/test/resources/sample.txt");
+	    String sheetName = MasterData;
+	  
 	     File initialFile = new File(file_path);
 	       InputStream inputStream =  new DataInputStream(new FileInputStream(initialFile));
 	    
@@ -83,7 +101,7 @@ public class CDIAutomationService {
 		 
      //
 		  System.out.println("====================ROW  :"+row_number+"===================");
-       ExcelDataModel model = new ExcelDataModel();
+          ExcelDataModel model = new ExcelDataModel();
 
 		  Iterator<Cell> cellsInRow = currentRow.iterator();
 
@@ -99,6 +117,7 @@ public class CDIAutomationService {
 			if( currentCell.getColumnIndex() == 2) {
 				model.setSubscriberSystemName(currentCell.getStringCellValue());
 			}
+			
 			if( currentCell.getColumnIndex() == 3) {
 				 model.setUseCaseId(currentCell.getStringCellValue());
 			}
@@ -135,7 +154,9 @@ public class CDIAutomationService {
 		  
 		  
 		  dataList.add(model);
+		  System.out.println(dataList.get(0).getSubscriberSystemName());
 		  
+		  		  
 		}
 		     
 		workbook.close();
@@ -144,6 +165,14 @@ public class CDIAutomationService {
 		String  jSon1 = new Gson().toJson(dataList.get(0));
 		String  jSon2 = new Gson().toJson(dataList.get(1));
 		jsonCompasre(jSon1,jSon2);
+		
+		JSONObject jsonObject = (JSONObject) GetJsonNode.GetNode(jsonfile_path);
+	    System.out.println(jsonObject);
+	    //System.out.println(jsonObject.get("age"));
+	    
+	    String res = TestReport.GenerateReport("MyFile.xlsx");
+	
+		
 		//System.out.println(new Gson().toJson(dataList));
 	
 	}

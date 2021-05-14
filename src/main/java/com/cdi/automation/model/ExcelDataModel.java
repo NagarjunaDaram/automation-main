@@ -19,7 +19,8 @@ public class ExcelDataModel implements Serializable{
 	private String prosumerOrgName;
 	private String prosumerSystemId;
 	private String prosumerSystemName;
-	public String getSuBScriberOrgName() {
+	
+	public String getSystemId() {
 		return suBScriberOrgName;
 	}
 	public void setSuBScriberOrgName(String suBScriberOrgName) {

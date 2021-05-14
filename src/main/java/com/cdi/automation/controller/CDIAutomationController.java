@@ -25,12 +25,12 @@ public class CDIAutomationController {
 	@Autowired
 	public CDIAutomationService cdiAutomationService;
 	
-	@RequestMapping(value = "/comparejson", method = RequestMethod.GET, produces = APPLICATION_JSON_VALUE, headers = {"Accept=application/json"})
-	public @ResponseBody String comparejson(HttpServletRequest httpRequest) {
+	@RequestMapping(value = "/functionaltest", method = RequestMethod.GET, produces = APPLICATION_JSON_VALUE, headers = {"Accept=application/json"})
+	public @ResponseBody String functionaltest(HttpServletRequest httpRequest) {
 		String response =null;
 		try {
 			logger.info("preparing public keys at :: "+new Date());
-			 response = cdiAutomationService.comparejson();
+			 response = cdiAutomationService.functionaltest();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
