@@ -19,6 +19,69 @@ public class ExcelDataModel implements Serializable{
 	private String prosumerOrgName;
 	private String prosumerSystemId;
 	private String prosumerSystemName;
+	private String enterpriseSystemId;
+	private String enterpriseSystemName;
+	private String enterpriseEndPointUrl;
+	private String enterprisePublicKey;
+	private String enterpriseOrgId;
+	private String enterpriseS3BucketName;
+	private String enterpriseSystemConfig;
+	
+	public String getenterpriseSystemId() {
+		return enterpriseSystemId;
+	}
+	
+	public void setEnterpriseSystemId(String enterpriseSystemId) {
+		this.enterpriseSystemId = enterpriseSystemId;
+	}
+	
+	public String getenterpriseSystemname() {
+		return enterpriseSystemName;
+	}
+	
+	public void setEnterpriseSystemName(String enterpriseSystemName) {
+		this.enterpriseSystemName = enterpriseSystemName;
+	}
+	
+	public String getenterpriseEndPointUrl() {
+		return enterpriseEndPointUrl;
+	}
+	
+	public void setEnterpriseEndPointUrl(String enterpriseEndPointURL) {
+		this.enterpriseEndPointUrl = enterpriseEndPointUrl;
+	}
+	
+	public String getPublicKey() {
+		return enterprisePublicKey;
+	}
+	
+	public void setPublicKey(String enterprisePublicKey) {
+		this.enterprisePublicKey = enterprisePublicKey;
+	}
+	
+	public String getenterpriseOrgId() {
+		return enterpriseOrgId;
+	}
+	
+	public void setEnterpriseOrgId(String enterpriseOrgId) {
+		this.enterpriseOrgId = enterpriseOrgId;
+	}
+	
+	public String getenterpriseS3BucketName() {
+		return enterpriseS3BucketName;
+	}
+	
+	public void setEnterpriseS3BucketName(String enterpriseS3BucketName) {
+		this.enterpriseS3BucketName = enterpriseS3BucketName;
+	}
+	
+	public String getenterpriseSystemConfig() {
+		return enterpriseSystemConfig;
+	}
+	
+	public void setEnterpriseSystemConfig(String enterpriseSystemConfig) {
+		this.enterpriseSystemConfig = enterpriseSystemConfig;
+	}
 	
 	public String getSystemId() {
 		return suBScriberOrgName;

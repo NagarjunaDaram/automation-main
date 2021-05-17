@@ -3,7 +3,6 @@ package com.cdi.automation.service;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,11 +18,15 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.cdi.automation.model.ExcelDataModel;
+import com.cdi.automation.model.TokenResponse;
+import com.cdi.automation.util.ConnectionUtil;
 import com.cdi.automation.util.FlatMapUtil;
 import com.cdi.automation.util.GetJsonNode;
 import com.cdi.automation.util.TestReport;
@@ -40,7 +43,9 @@ public class CDIAutomationService {
 	
 	private static final Logger logger = LoggerFactory.getLogger(CDIAutomationService.class);
 	
-	RestTemplate restTemplate;
+//	RestTemplate restTemplate;
+	@Autowired
+	ConnectionUtil connectionUtil;
 	
 	@Value("${masterdatasheet}")
 	public String file_path;
@@ -66,8 +71,23 @@ public class CDIAutomationService {
 		logger.info("====================In Service========================");
 		try {
 			readExcel();
+			
+			
+			String url ="http://Test-CDI-psa-back-env.eba-6irznnps.ap-southeast-1.elasticbeanstalk.com/api/v1/config" ;
+			//String url ="https://equatorial.integrate.afa-cdi.com/api/v1/config" ;
+			HttpHeaders requestHeaders = new HttpHeaders();
+			//requestHeaders.set("Authorization", "Bearer ".concat(getToken()));
+			requestHeaders.add("Authorization", "Bearer ".concat(getToken()));
 		
-			response = "Comparing Json" ;
+		   String apiResponse =	connectionUtil.callGetRestService(url,  requestHeaders);
+		
+		
+			
+			System.out.println(apiResponse);
+			
+			
+			
+			response = apiResponse ;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -75,6 +95,35 @@ public class CDIAutomationService {
 		return response;
 	}
 	
+	
+	public String getToken() {
+		String token = "";
+		
+		String tokenUrl ="http://Test-CDI-tfg-back-env.eba-nbxpadyk.ap-southeast-1.elasticbeanstalk.com/api/test-token" ;
+		//String tokenUrl = "https://equatorial.integrate.afa-cdi.com/api/test-token" ;
+		HttpHeaders tokenHeaders = new HttpHeaders();
+		tokenHeaders.set("Authorization", "Y2RpQWRtaW46Y2RpQWRtaW4hMTIz");
+		tokenHeaders.add(token, tokenUrl);
+		
+	   try {
+		String jsonResponse =	connectionUtil.callGetRestService(tokenUrl,tokenHeaders);
+		     TokenResponse response = new Gson().fromJson(jsonResponse, TokenResponse.class);		     
+		     
+		     
+		     TokenResponse tokenresponse = new Gson().fromJson( response.getData().toString(), TokenResponse.class);
+		     
+		     token = tokenresponse.getToken();
+		     
+		     
+		
+		
+	} catch (Exception e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+		
+		return token;
+	}
 	
 	
 	public void  readExcel() throws Exception {
@@ -164,6 +213,8 @@ public class CDIAutomationService {
 		
 		String  jSon1 = new Gson().toJson(dataList.get(0));
 		String  jSon2 = new Gson().toJson(dataList.get(1));
+		
+		System.out.println(jSon1);
 		jsonCompasre(jSon1,jSon2);
 		
 		JSONObject jsonObject = (JSONObject) GetJsonNode.GetNode(jsonfile_path);
