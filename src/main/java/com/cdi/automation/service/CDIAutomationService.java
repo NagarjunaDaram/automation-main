@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -15,6 +16,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,8 +27,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.cdi.automation.model.ExcelDataModel;
+import com.cdi.automation.model.TestListDataModel;
 import com.cdi.automation.model.TokenResponse;
 import com.cdi.automation.util.ConnectionUtil;
+import com.cdi.automation.util.BuildMasterJson;
 import com.cdi.automation.util.FlatMapUtil;
 import com.cdi.automation.util.GetJsonNode;
 import com.cdi.automation.util.TestReport;
@@ -37,6 +41,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+
+
+
+
 
 @Service
 public class CDIAutomationService {
@@ -46,6 +55,11 @@ public class CDIAutomationService {
 //	RestTemplate restTemplate;
 	@Autowired
 	ConnectionUtil connectionUtil;
+	
+	@Autowired
+	BuildMasterJson buildMasterJson;
+	
+
 	
 	@Value("${masterdatasheet}")
 	public String file_path;
@@ -62,48 +76,387 @@ public class CDIAutomationService {
 	@Value("${SubscriptionWorkSheet}")
 	public String SubscriptionWorkSheet;
 	
+	@Value("${TestListSheet}")
+	public String testListSheet;
+	
 	@Value("${MasterDataSheet}")
 	public String MasterData;
+	
+	@Value("${SwaggerSchemaEndpoint}")
+	public String SwaggerSchemaUrl;
+	
+	@Value("${SwaggerUCCEndpoint}")
+	public String SwaggerUCCUrl;
 
 	
 	public  String functionaltest() {
 		String response =null;
+		String masterJson = null;
 		logger.info("====================In Service========================");
 		try {
-			readExcel();
+			
+			List<ExcelDataModel> data = getEnterpriseData(EnterpriseWorksheet);
+			List<ExcelDataModel> subscriptionData = getSubscriptionData(SubscriptionWorkSheet);
+			List<ExcelDataModel> organizationData = getOrganizationData(OrganizationWorksheet);
+			List<TestListDataModel> testListData = getTestListData(testListSheet);
+			List<ExcelDataModel> ParticipantData = new ArrayList<ExcelDataModel>();
+			
+			List<String> providerDataElement = new ArrayList<String>();
+			List<String> providerDatElement = new ArrayList<String>();
+			List<String> providerDataIndex = new ArrayList<String>();
+			List<String> providerIndex = new ArrayList<String>();
+			List<String> providerToData = new ArrayList<String>();
+			
+			List<String> subscriberDataElement = new ArrayList<String>();
+			List<String> subscriberDatElement = new ArrayList<String>();
+			List<String> subscriberDataIndex = new ArrayList<String>();
+			List<String> subscriberIndex = new ArrayList<String>();
+			List<String> subscriberFromData = new ArrayList<String>();
+			
+			int countOfRowsInSubscription = subscriptionData.size();
+			int countofRowsInEnterpriseSheet = data.size();
+			int countofRowsInOrganizationSheet = organizationData.size();
+			int countofRowsInTestListSheet = testListData.size();
 			
 			
-			String url ="http://Test-CDI-psa-back-env.eba-6irznnps.ap-southeast-1.elasticbeanstalk.com/api/v1/config" ;
-			//String url ="https://equatorial.integrate.afa-cdi.com/api/v1/config" ;
-			HttpHeaders requestHeaders = new HttpHeaders();
-			//requestHeaders.set("Authorization", "Bearer ".concat(getToken()));
-			requestHeaders.add("Authorization", "Bearer ".concat(getToken()));
+			String ProvideType = "CONSUMER";
+			
+			
+			for (int i =0; i < countofRowsInTestListSheet; i++) {
+				String tokenUrl = null;
+				masterJson = null;
+				
+				String SystemId = testListData.get(i).getTestSystemId();
+				System.out.println(SystemId);
+				/*Check the Health API */
+				String testURL = testListData.get(i).getTestUrl();
+				System.out.println(testURL);
+			
+				HttpHeaders requestHeaders = new HttpHeaders();
+				tokenUrl = testURL+"test-token";
+				System.out.println("toekn-url:"+tokenUrl);
+				String testtoken = getToken(tokenUrl);
+				System.out.println("Testtoken:"+testtoken);
+				
+				//requestHeaders.set("Authorization", "Bearer ".concat(getToken(tokenUrl)));
+				//requestHeaders.add(SystemId, testURL);
+				String healthUrl = testURL+"v1/health";
+				requestHeaders.set("Authorization", "Bearer "+testtoken);
+				String configResponse =	connectionUtil.callGetRestService(healthUrl,  requestHeaders);
+				System.out.println("Health API Response:"+healthUrl+"\n"+configResponse);
+				if (configResponse.isEmpty()) {
+					System.out.println("health Check for Pitstop"+healthUrl+"Failed:No Further tests will be executed");
+					
+					continue;
+				}
+				else {
+					System.out.println("health Check for Pitstop"+healthUrl+"---->"+" Successful: Continuing the Test.....");
+					System.out.println("Run the Config Check ......");
+					for (int j = 0; j < countOfRowsInSubscription; j++ ) {
+						String providerSystemId = subscriptionData.get(j).getProsumerSystemId();
+						String subscriberSystemId = subscriptionData.get(j).getSubscriberSystemId();
+						//System.out.println("Prosumer System ID:"+providerSystemId);
+						/*to get the what is being provided*/
+						if (providerSystemId.equals(SystemId)) {
+							String providerType = subscriptionData.get(j).getProsumerType();
+							
+							if(providerType.equals(ProvideType)) {
+								System.out.println("Prosumer Type:"+providerSystemId+providerType+"Index: "+j+subscriptionData.get(j).getDataElementId());
+								providerDatElement.add(subscriptionData.get(j).getDataElementId());
+								providerDataIndex.add(subscriptionData.get(j).getDataElementId()+":"+j);
+								 
+								
+								
+							}
+						}
+						/*to get the what is being consumed*/
+						if (subscriberSystemId.equals(SystemId)) {
+							String subscriberType = subscriptionData.get(j).getProsumerType();
+							
+							if(subscriberType.equals(ProvideType)) {
+								System.out.println("Subscriber Type:"+providerSystemId+subscriberType+"Index: "+j+subscriptionData.get(j).getDataElementId());
+								subscriberDatElement.add(subscriptionData.get(j).getDataElementId());
+								subscriberDataIndex.add(subscriptionData.get(j).getDataElementId()+":"+j);
+								 
+								
+								
+							}
+						}
+						
+					}
+					/*Construct the Produces Structure*/
+					if(!providerDatElement.isEmpty()) {
+						providerDataElement = removeDuplicates((ArrayList<String>) providerDatElement);
+						//System.out.println("ArrayList with duplicates removed: " + providerDataElement);
+						for (int k =0; k < providerDataElement.size(); k ++) {
+							String DataElement = providerDataElement.get(k);
+							/*Get the Swagger Schema for each Data Element*/
+							String SwaggerBody = getSwaggerSchemaBody(DataElement, SwaggerUCCUrl);
+							System.out.println("Swagger Schema Body for  " + DataElement+"\n"+SwaggerBody);
+							HttpHeaders SwaggerSchemaHeaders = new HttpHeaders();
+							SwaggerSchemaHeaders.set("Authorization", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNkaS1tb2NrIiwiaWF0IjoxNjE4NDcyODc1fQ.lhIFuqAOIAkuniIiNrDFgvHyPJqqDqBl0NWswUNCZHA");
+							String providerSwaggerSchema = connectionUtil.callPostRestService(SwaggerSchemaUrl, SwaggerBody, SwaggerSchemaHeaders);
+							providerSwaggerSchema = providerSwaggerSchema.substring(0, providerSwaggerSchema.length() - 1) + "";
+							providerSwaggerSchema = providerSwaggerSchema.substring(0, providerSwaggerSchema.length() - 1) + "";
+							providerSwaggerSchema = providerSwaggerSchema+",";
+							//Thread.sleep(6000);
+							System.out.println("Swagger Schema :"+DataElement+"\n"+providerSwaggerSchema);
+							
+							providerIndex = getMatchingElements(DataElement, providerDataIndex);
+							System.out.println("provider index"+providerIndex);
+							for (int n =0; n < providerIndex.size(); n++) {
+								String parts [] = providerIndex.get(n).split(":");
+								int index = Integer.parseInt(parts[1]);
+								String ConsumerOrgId = subscriptionData.get(index).getSubscriberOrgId();
+							}
+							
+							
+							  //String res = buildMasterJson.MasterJson(data , i); 
+							  //masterJson = res+providerSwaggerSchema; 
+							  //System.out.println(masterJson);
+							 
+							
+							
+						}
+						
+					}
+					/*Construct the Consumes Structure*/
+					if(!subscriberDatElement.isEmpty()) {
+						subscriberDataElement = removeDuplicates((ArrayList<String>) subscriberDatElement);
+						//System.out.println("ArrayList with duplicates removed: " + providerDataElement);
+						for (int k =0; k < subscriberDataElement.size(); k ++) {
+							String DataElement = subscriberDataElement.get(k);
+							String SwaggerBody = getSwaggerSchemaBody(DataElement, SwaggerUCCUrl);
+							System.out.println("Swagger Schema Body for  " + DataElement+"\n"+SwaggerBody);
+							HttpHeaders SwaggerSchemaHeaders = new HttpHeaders();
+							SwaggerSchemaHeaders.set("Authorization", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNkaS1tb2NrIiwiaWF0IjoxNjE4NDcyODc1fQ.lhIFuqAOIAkuniIiNrDFgvHyPJqqDqBl0NWswUNCZHA");
+							String consumerSwaggerSchema = connectionUtil.callPostRestService(SwaggerSchemaUrl, SwaggerBody, SwaggerSchemaHeaders);
+							consumerSwaggerSchema = consumerSwaggerSchema.substring(0, consumerSwaggerSchema.length() - 1) + "";
+							consumerSwaggerSchema = consumerSwaggerSchema.substring(0, consumerSwaggerSchema.length() - 1) + "";
+							consumerSwaggerSchema = consumerSwaggerSchema+",";
+							//Thread.sleep(6000);
+							System.out.println("Swagger Schema :"+DataElement+"\n"+consumerSwaggerSchema);
+							/*
+							 * String res = buildMasterJson.MasterJson(data , i); masterJson =
+							 * res+consumerSwaggerSchema; System.out.println(masterJson);
+							 */
+							
+							subscriberIndex = getMatchingElements(DataElement, subscriberDataIndex);
+							System.out.println("Subscriber Index First Element"+subscriberIndex.get(0));
+							System.out.println("Subscriber Index"+subscriberIndex);
+							for (int l =0; l < subscriberIndex.size(); l++) {
+								String parts[] = subscriberIndex.get(l).split(":");
+								int index = Integer.parseInt(parts[1]);
+							     
+								System.out.println("Indexex of each element"+ parts[1]);
+								String ProsumerOrgId = subscriptionData.get(index).getProsumerOrgId();
+								String ProsumerOrgName = null;
+								String ProsumerOrgIconUrl = null;
+								for (int m =0; m < countofRowsInOrganizationSheet; m ++) {
+									if(ProsumerOrgId.equals(organizationData.get(m).getOrgnizationOrgId())) {
+										ProsumerOrgName = organizationData.get(m).getOrganizationName();
+										ProsumerOrgIconUrl = organizationData.get(m).getOrganizationIconUrl();
+									}
+								}
+								
+										
+							} 
+							
+							
+							
+						}
+						
+					}
+					
+					
+				}
+				
+				
+			}
+			
+			
+			String testprovider = getProviderToContent("a04a0668-62a3-428d-8672-06769a7171a0", "Golden Island - BTS", "/img/oiltanking.png", "00c8f0c4-724a-4e6a-8839-991459c75866", "OilTanking Pte. Ltd.", "", "0fd2b2f7-4dfd-48d7-8256-38237bab3846", "Cogent Holdings Pte. Ltd" );
+			System.out.println("provider json structure: "+testprovider);
+			List<String> enterpriseData = new ArrayList<String>();
+			enterpriseData.add("a04a0668-62a3-428d-8672-06769a7171a0");
+			enterpriseData.add("Golden Island - BTS");
+			enterpriseData.add("Test-CDI-goldenisland.fifo");
+			enterpriseData.add("test-cdi-goldenisland");
+			String jsonresponse = buildMasterJson.ConfigJson(enterpriseData);
+			System.out.println(jsonresponse);
+			
+				
+			System.out.println(masterJson);
+				
+
+			
 		
-		   String apiResponse =	connectionUtil.callGetRestService(url,  requestHeaders);
-		
-		
+	
 			
-			System.out.println(apiResponse);
+
+		   response = "Test Complete!" ;
 			
-			
-			
-			response = apiResponse ;
 		} catch (Exception e) {
 			e.printStackTrace();
+			
 		}
+		
+		TestReport.GenerateReport("Myfile.xlsx");
 		
 		return response;
 	}
 	
 	
-	public String getToken() {
-		String token = "";
+	
+	public List<String> getMatchingElements(String search, List<String> list) {
+	    List<String> matches = new ArrayList<String>();
+
+	    for(String str: list) {
+	        if (str.contains(search)) {
+	            matches.add(str);
+	        }
+	    }
+
+	    return matches;
+	}
+	
+
+	@SuppressWarnings("unchecked")
+	public String getSwaggerSchemaBody(String dataElement, String swaggerUrl) {
+		String schemaBody = null;
 		
-		String tokenUrl ="http://Test-CDI-tfg-back-env.eba-nbxpadyk.ap-southeast-1.elasticbeanstalk.com/api/test-token" ;
+	
+		JSONObject swagger = new JSONObject();
+		swagger.put("swaggerUrl", swaggerUrl);
+		swagger.put("swaggerAPIKey", "8abd5281-801e-4344-afb7-49960fb24ab4");
+		JSONArray array = new JSONArray();
+		array.add(dataElement);
+		swagger.put("parameters", array);
+		schemaBody = swagger.toJSONString();
+		return schemaBody;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public String getProviderToContent(String Id, String Name, String iconUrl, String onBehalfOfId, String onBehalfOfName, String onBehalfOfIconUrl, String systemid, String systemName ) {
+		
+		JSONObject swagger = new JSONObject();
+		JSONObject toInnerElement = new JSONObject();
+		JSONObject onBehalfofInnerElement = new JSONObject();
+		JSONObject toSystem = new JSONObject();
+		JSONArray to = new JSONArray();
+		JSONArray onBehalfOf = new JSONArray();
+		
+		toInnerElement.put("id", Id);
+		toInnerElement.put("name", Name);
+		toInnerElement.put("iconUrl", iconUrl);
+		to.add(toInnerElement);
+		
+		
+		onBehalfofInnerElement.put("id", onBehalfOfId);
+		onBehalfofInnerElement.put("name", onBehalfOfName);
+		onBehalfofInnerElement.put("iconUrl", onBehalfOfIconUrl);
+		onBehalfOf.add(onBehalfofInnerElement);
+		toInnerElement.put("on_behalf_of", onBehalfOf);
+
+		toSystem.put("id", systemid);
+		toSystem.put("name", systemName);
+		  
+		toInnerElement.put("system", toSystem);
+		 
+		  
+		System.out.println(toInnerElement);
+
+		 
+		
+		
+		
+		//to.add(system);
+		//to.add(onBehalfofInnerElement);
+		
+		//onBehalfOf.add(onBehalfofInnerElement);
+		//system.add(toSystem);
+		//to.add(onBehalfOf);
+		//to.add(system);
+		swagger.put("to", to);
+		
+		return swagger.toString();
+		
+		
+		
+		
+		
+		
+	}
+	
+	@SuppressWarnings("unchecked")
+	public String getConsumerToContent(String Id, String Name, String iconUrl, String onBehalfOfId, String onBehalfOfName, String onBehalfOfIconUrl, String systemid, String systemName ) {
+		
+		JSONObject swagger = new JSONObject();
+		JSONObject toInnerElement = new JSONObject();
+		JSONObject onBehalfofInnerElement = new JSONObject();
+		JSONObject toSystem = new JSONObject();
+		JSONArray to = new JSONArray();
+		JSONArray onBehalfOf = new JSONArray();
+		JSONArray system = new JSONArray();
+		
+		toInnerElement.put("id", Id);
+		toInnerElement.put("name", Name);
+		toInnerElement.put("iconUrl", iconUrl);
+		
+		onBehalfofInnerElement.put("id", onBehalfOfId);
+		onBehalfofInnerElement.put("name", onBehalfOfName);
+		onBehalfofInnerElement.put("iconUrl", onBehalfOfIconUrl);
+		
+		toSystem.put("id", systemid);
+		toSystem.put("name", systemName);
+		
+		to.add(toInnerElement);
+		onBehalfOf.add(onBehalfofInnerElement);
+		system.add(toSystem);
+		to.add(onBehalfOf);
+		to.add(system);
+		swagger.put("from", to);
+		
+		return swagger.toString();
+		
+		
+		
+		
+		
+		
+	}
+		
+	
+    public ArrayList<String> removeDuplicates(ArrayList<String> list)
+    {
+  
+        // Create a new ArrayList
+        ArrayList<String> newList = new ArrayList<String>();
+  
+        // Traverse through the first list
+        for (String element : list) {
+  
+            // If this element is not present in newList
+            // then add it
+            if (!newList.contains(element)) {
+  
+                newList.add(element);
+            }
+        }
+        return newList;
+       }
+     
+	
+	
+	public String getToken(String tokenUrl) {
+		String token = null;
+		
+		//String tokenUrl ="http://Test-CDI-tfg-back-env.eba-nbxpadyk.ap-southeast-1.elasticbeanstalk.com/api/test-token" ;
 		//String tokenUrl = "https://equatorial.integrate.afa-cdi.com/api/test-token" ;
 		HttpHeaders tokenHeaders = new HttpHeaders();
-		tokenHeaders.set("Authorization", "Y2RpQWRtaW46Y2RpQWRtaW4hMTIz");
-		tokenHeaders.add(token, tokenUrl);
+		//tokenHeaders.set("Authorization", "Basic Y2RpQWRtaW46Y2RpQWRtaW4hMTIz");
+		//tokenHeaders.add(token, tokenUrl);
+		tokenHeaders.add("Authorization", "Basic Y2RpQWRtaW46Y2RpQWRtaW4hMTIz");
 		
 	   try {
 		String jsonResponse =	connectionUtil.callGetRestService(tokenUrl,tokenHeaders);
@@ -126,18 +479,22 @@ public class CDIAutomationService {
 	}
 	
 	
-	public void  readExcel() throws Exception {
+	
+	
+	public List<ExcelDataModel>  getEnterpriseData(String sheetName) throws Exception {
 		
 		
 		//InputStream	inputStream = null;
-	    String sheetName = MasterData;
+	    //String sheetName = MasterData;
 	  
-	     File initialFile = new File(file_path);
-	       InputStream inputStream =  new DataInputStream(new FileInputStream(initialFile));
+	    File initialFile = new File(file_path);
+	    InputStream inputStream =  new DataInputStream(new FileInputStream(initialFile));
 	    
 		Workbook workbook = new XSSFWorkbook(inputStream);
 		Sheet sheet = workbook.getSheet(sheetName);
 		Iterator<Row> rows = sheet.iterator();
+		int numberOfRows = sheet.getPhysicalNumberOfRows();
+		System.out.println("Number of Rows in the Sheet:"+numberOfRows);
         List<ExcelDataModel> dataList = new ArrayList<ExcelDataModel>();
 		while (rows.hasNext()) {
 			
@@ -157,40 +514,113 @@ public class CDIAutomationService {
 		  while (cellsInRow.hasNext()) {
 			  
 		     Cell currentCell = cellsInRow.next();    
-		     if( currentCell.getColumnIndex() == 0) {
-		    	 model.setSuBScriberOrgName(currentCell.getStringCellValue());
+		    if( currentCell.getColumnIndex() == 0) {
+		    	 model.setEnterpriseSystemId(currentCell.getStringCellValue());
 		     }
 			if( currentCell.getColumnIndex() == 1) {
-				model.setSubscriberSystemId(currentCell.getStringCellValue());
+				model.setEnterpriseSystemName(currentCell.getStringCellValue());
 			}
 			if( currentCell.getColumnIndex() == 2) {
-				model.setSubscriberSystemName(currentCell.getStringCellValue());
+				model.setEnterpriseEndPointUrl(currentCell.getStringCellValue());
 			}
 			
 			if( currentCell.getColumnIndex() == 3) {
-				 model.setUseCaseId(currentCell.getStringCellValue());
+				 model.setEnterpriseS3BucketName(currentCell.getStringCellValue());
 			}
 			if( currentCell.getColumnIndex() == 4) {
-				 model.setDataElementId(currentCell.getStringCellValue());
+				 model.setPublicKey(currentCell.getStringCellValue());
 			}
 			if( currentCell.getColumnIndex() == 5) {
-				 model.setProsumerOrgId(currentCell.getStringCellValue());
+				 model.setEnterpriseOrgId(currentCell.getStringCellValue());
+			}
+		
+			if( currentCell.getColumnIndex() == 6) {
+				model.setEnterpriseSystemConfig(currentCell.getStringCellValue());
+		
+		     		  
+		  }
+		  
+		  
+		  
+		  
+		  
+		  dataList.add(model);
+		  //System.out.println(dataList.get(0).getSubscriberSystemName());
+		  
+		  		  
+		}
+		     
+		workbook.close();
+		
+		}
+		    
+	    return dataList;
+		
+		
+	
+	
+	}
+	
+	
+	public List<ExcelDataModel>  getSubscriptionData(String sheetName) throws Exception {
+		
+		
+		//InputStream	inputStream = null;
+	    //String sheetName = MasterData;
+	  
+	    File initialFile = new File(file_path);
+	    InputStream inputStream =  new DataInputStream(new FileInputStream(initialFile));
+	    
+		Workbook workbook = new XSSFWorkbook(inputStream);
+		Sheet sheet = workbook.getSheet(sheetName);
+		Iterator<Row> rows = sheet.iterator();
+		int numberOfRows = sheet.getPhysicalNumberOfRows();
+		System.out.println("Number of Rows in the Sheet:"+numberOfRows);
+        List<ExcelDataModel> subList = new ArrayList<ExcelDataModel>();
+		while (rows.hasNext()) {
+			
+		  Row currentRow = rows.next();
+		  int row_number =currentRow.getRowNum();
+		  if(row_number == 0) {
+			  continue;
+			  
+		  }
+		 
+     //
+		  System.out.println("====================ROW  :"+row_number+"===================");
+          ExcelDataModel submodel = new ExcelDataModel();
+
+		  Iterator<Cell> cellsInRow = currentRow.iterator();
+
+		  while (cellsInRow.hasNext()) {
+			  
+		     Cell currentCell = cellsInRow.next();    
+		     if( currentCell.getColumnIndex() == 0) {
+		    	 submodel.setSubscriptionId(currentCell.getStringCellValue());
+		     }
+			if( currentCell.getColumnIndex() == 1) {
+				submodel.setSubscriberOrgId(currentCell.getStringCellValue());
+			}
+			if( currentCell.getColumnIndex() == 2) {
+				submodel.setSubscriberSystemId(currentCell.getStringCellValue());
+			}
+			
+			if( currentCell.getColumnIndex() == 3) {
+				 submodel.setUseCaseId(currentCell.getStringCellValue());
+			}
+			if( currentCell.getColumnIndex() == 4) {
+				 submodel.setDataElementId(currentCell.getStringCellValue());
+			}
+			if( currentCell.getColumnIndex() == 5) {
+				 submodel.setProsumerOrgId(currentCell.getStringCellValue());
 			}
 			if( currentCell.getColumnIndex() == 6) {
-				model.setProsumerOrgName(currentCell.getStringCellValue());
+				submodel.setProsumerSystemId(currentCell.getStringCellValue());
 			}
 			if( currentCell.getColumnIndex() == 7) {
-				 model.setProsumerSystemId(currentCell.getStringCellValue());
+				 submodel.setProsumerType(currentCell.getStringCellValue());
 			}
-			if( currentCell.getColumnIndex() == 8) {
-				model.setProsumerSystemName(currentCell.getStringCellValue());
-			}
-			if( currentCell.getColumnIndex() == 9) {
-				 
-			}
-			if( currentCell.getColumnIndex() == 10) {
-				 
-			}
+			
 		     
 		
 		     
@@ -202,8 +632,8 @@ public class CDIAutomationService {
 		  
 		  
 		  
-		  dataList.add(model);
-		  System.out.println(dataList.get(0).getSubscriberSystemName());
+		  subList.add(submodel);
+		  //System.out.println(dataList.get(0).());
 		  
 		  		  
 		}
@@ -211,8 +641,8 @@ public class CDIAutomationService {
 		workbook.close();
 		
 		
-		String  jSon1 = new Gson().toJson(dataList.get(0));
-		String  jSon2 = new Gson().toJson(dataList.get(1));
+		String  jSon1 = new Gson().toJson(subList.get(0));
+		String  jSon2 = new Gson().toJson(subList.get(1));
 		
 		System.out.println(jSon1);
 		jsonCompasre(jSon1,jSon2);
@@ -221,12 +651,159 @@ public class CDIAutomationService {
 	    System.out.println(jsonObject);
 	    //System.out.println(jsonObject.get("age"));
 	    
-	    String res = TestReport.GenerateReport("MyFile.xlsx");
+	    return subList;
 	
 		
 		//System.out.println(new Gson().toJson(dataList));
 	
 	}
+	
+	
+	public List<TestListDataModel>  getTestListData(String sheetName) throws Exception {
+		
+		
+		//InputStream	inputStream = null;
+	    //String sheetName = MasterData;
+	  
+	    File initialFile = new File(file_path);
+	    InputStream inputStream =  new DataInputStream(new FileInputStream(initialFile));
+	    
+		Workbook workbook = new XSSFWorkbook(inputStream);
+		Sheet sheet = workbook.getSheet(sheetName);
+		Iterator<Row> rows = sheet.iterator();
+		int numberOfRows = sheet.getPhysicalNumberOfRows();
+		System.out.println("Number of Rows in the Sheet:"+numberOfRows);
+        List<TestListDataModel> testList = new ArrayList<TestListDataModel>();
+		while (rows.hasNext()) {
+			
+		  Row currentRow = rows.next();
+		  int row_number =currentRow.getRowNum();
+		  if(row_number == 0) {
+			  continue;
+			  
+		  }
+		 
+     //
+		  System.out.println("====================ROW  :"+row_number+"===================");
+		  TestListDataModel testmodel = new TestListDataModel();
+
+		  Iterator<Cell> cellsInRow = currentRow.iterator();
+
+		  while (cellsInRow.hasNext()) {
+			  
+		     Cell currentCell = cellsInRow.next();    
+		     if( currentCell.getColumnIndex() == 0) {
+		    	 testmodel.setTestSystemId(currentCell.getStringCellValue());
+		     }
+			if( currentCell.getColumnIndex() == 1) {
+				testmodel.setTestSystemName(currentCell.getStringCellValue());
+			}
+			if( currentCell.getColumnIndex() == 2) {
+				testmodel.setTestUrl(currentCell.getStringCellValue());
+			}
+			
+		     
+		  
+		  }
+		  
+		  
+		  
+		  
+		  
+		  testList.add(testmodel);
+		  //System.out.println(dataList.get(0).());
+		  
+		  		  
+		}
+		     
+		workbook.close();
+		
+		
+
+	    
+	    return testList;
+	
+		
+		//System.out.println(new Gson().toJson(dataList));
+	
+	}
+	
+	
+	public List<ExcelDataModel>  getOrganizationData(String sheetName) throws Exception {
+		
+		
+		//InputStream	inputStream = null;
+	    //String sheetName = MasterData;
+	  
+	    File initialFile = new File(file_path);
+	    InputStream inputStream =  new DataInputStream(new FileInputStream(initialFile));
+	    
+		Workbook workbook = new XSSFWorkbook(inputStream);
+		Sheet sheet = workbook.getSheet(sheetName);
+		Iterator<Row> rows = sheet.iterator();
+		int numberOfRows = sheet.getPhysicalNumberOfRows();
+		System.out.println("Number of Rows in the Sheet:"+numberOfRows);
+        List<ExcelDataModel> orgList = new ArrayList<ExcelDataModel>();
+		while (rows.hasNext()) {
+			
+		  Row currentRow = rows.next();
+		  int row_number =currentRow.getRowNum();
+		  if(row_number == 0) {
+			  continue;
+			  
+		  }
+		 
+     //
+		  System.out.println("====================ROW  :"+row_number+"===================");
+		  ExcelDataModel orgmodel = new ExcelDataModel();
+
+		  Iterator<Cell> cellsInRow = currentRow.iterator();
+
+		  while (cellsInRow.hasNext()) {
+			  
+		     Cell currentCell = cellsInRow.next();    
+		     if( currentCell.getColumnIndex() == 0) {
+		    	 orgmodel.setOrgnizationOrgId(currentCell.getStringCellValue());
+		     }
+			if( currentCell.getColumnIndex() == 2) {
+				orgmodel.setOrganizationName(currentCell.getStringCellValue());
+			}
+			if( currentCell.getColumnIndex() == 4) {
+				orgmodel.setOrganizationType(currentCell.getStringCellValue());
+			}
+			
+			if( currentCell.getColumnIndex() == 5) {
+				orgmodel.setOrganizationIconUrl(currentCell.getStringCellValue());
+			}
+			
+		     
+		  
+		  }
+		  
+		  
+		  
+		  
+		  
+		  orgList.add(orgmodel);
+		  //System.out.println(dataList.get(0).());
+		  
+		  		  
+		}
+		     
+		workbook.close();
+		
+		
+
+	    
+	    return orgList;
+	
+		
+		//System.out.println(new Gson().toJson(dataList));
+	
+	}
+	
+	
+
 	
 	public void jsonCompasre(String jSon1,String jSon2) throws JsonMappingException, JsonProcessingException {
 		
@@ -254,6 +831,9 @@ public class CDIAutomationService {
 		          .forEach((key, value) -> System.out.println(key + ": " + value));
 		
 	}
-	    
 	
 }
+
+	    
+	
+

@@ -10,22 +10,29 @@ public class ExcelDataModel implements Serializable{
 	private static final long serialVersionUID = 1L;
 	
 	
-	private String suBScriberOrgName;
+	private String subscriptionId;
+	private String subscriberOrgId;
 	private String subscriberSystemId;
-	private String subscriberSystemName;
 	private String useCaseId;
 	private String dataElementId;
+	
 	private String prosumerOrgId;
-	private String prosumerOrgName;
 	private String prosumerSystemId;
-	private String prosumerSystemName;
+	private String prosumerType;
+	
 	private String enterpriseSystemId;
 	private String enterpriseSystemName;
 	private String enterpriseEndPointUrl;
+	private String enterpriseS3BucketName;
 	private String enterprisePublicKey;
 	private String enterpriseOrgId;
-	private String enterpriseS3BucketName;
 	private String enterpriseSystemConfig;
+	
+	
+	private String OrgnizationOrgId;
+	private String OrganizationName;
+	private String OrganizationIconUrl;
+	private String OrganizationType;
 	
 	public String getenterpriseSystemId() {
 		return enterpriseSystemId;
@@ -83,24 +90,32 @@ public class ExcelDataModel implements Serializable{
 		this.enterpriseSystemConfig = enterpriseSystemConfig;
 	}
 	
-	public String getSystemId() {
-		return suBScriberOrgName;
+
+	public String getSubscriptionId() {
+		return subscriptionId;
 	}
-	public void setSuBScriberOrgName(String suBScriberOrgName) {
-		this.suBScriberOrgName = suBScriberOrgName;
+
+	public void setSubscriptionId(String subscriptionId) {
+		this.subscriptionId = subscriptionId;
 	}
+
+	public String getSubscriberOrgId() {
+		return subscriberOrgId;
+	}
+
+	public void setSubscriberOrgId(String subscriberOrgId) {
+		this.subscriberOrgId = subscriberOrgId;
+	}
+
+
 	public String getSubscriberSystemId() {
 		return subscriberSystemId;
 	}
+
 	public void setSubscriberSystemId(String subscriberSystemId) {
 		this.subscriberSystemId = subscriberSystemId;
 	}
-	public String getSubscriberSystemName() {
-		return subscriberSystemName;
-	}
-	public void setSubscriberSystemName(String subscriberSystemName) {
-		this.subscriberSystemName = subscriberSystemName;
-	}
+
 	public String getUseCaseId() {
 		return useCaseId;
 	}
@@ -119,26 +134,56 @@ public class ExcelDataModel implements Serializable{
 	public void setProsumerOrgId(String prosumerOrgId) {
 		this.prosumerOrgId = prosumerOrgId;
 	}
-	public String getProsumerOrgName() {
-		return prosumerOrgName;
+
+	public String getProsumerType() {
+		return prosumerType;
 	}
-	public void setProsumerOrgName(String prosumerOrgName) {
-		this.prosumerOrgName = prosumerOrgName;
+
+	public void setProsumerType(String prosumerType) {
+		this.prosumerType = prosumerType;
 	}
+
 	public String getProsumerSystemId() {
 		return prosumerSystemId;
 	}
 	public void setProsumerSystemId(String prosumerSystemId) {
 		this.prosumerSystemId = prosumerSystemId;
 	}
-	public String getProsumerSystemName() {
-		return prosumerSystemName;
-	}
-	public void setProsumerSystemName(String prosumerSystemName) {
-		this.prosumerSystemName = prosumerSystemName;
-	}
+
 	public static long getSerialversionuid() {
 		return serialVersionUID;
+	}
+
+	public String getOrgnizationOrgId() {
+		return OrgnizationOrgId;
+	}
+
+	public void setOrgnizationOrgId(String orgnizationOrgId) {
+		OrgnizationOrgId = orgnizationOrgId;
+	}
+
+	public String getOrganizationName() {
+		return OrganizationName;
+	}
+
+	public void setOrganizationName(String organizationName) {
+		OrganizationName = organizationName;
+	}
+
+	public String getOrganizationIconUrl() {
+		return OrganizationIconUrl;
+	}
+
+	public void setOrganizationIconUrl(String organizationIconUrl) {
+		OrganizationIconUrl = organizationIconUrl;
+	}
+
+	public String getOrganizationType() {
+		return OrganizationType;
+	}
+
+	public void setOrganizationType(String organizationType) {
+		OrganizationType = organizationType;
 	}
 	
 	

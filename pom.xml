@@ -34,12 +34,33 @@
 			<scope>test</scope>
 		</dependency>
 		
-		<dependency>
-    <groupId>org.apache.poi</groupId>
-    <artifactId>poi</artifactId>
-    <version>3.12</version>
-</dependency>
-<!-- excel 2007 over-->
+ <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>3.12</version>
+            
+        </dependency>
+    
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>3.12</version>
+            
+        </dependency>
+
+   <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.20</version>
+            
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.xmlbeans</groupId>
+            <artifactId>xmlbeans</artifactId>
+            <version>3.1.0</version>
+            <scope>runtime</scope>
+        </dependency>
 
 
 <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
@@ -67,6 +88,11 @@
     <groupId>org.apache.poi</groupId>
     <artifactId>poi-ooxml</artifactId>
     <version>3.12</version>
+</dependency>
+<dependency>
+<groupId>com.github.javafaker</groupId>
+<artifactId>javafaker</artifactId>
+<version>1.0.2</version>
 </dependency>
 	</dependencies>
 
