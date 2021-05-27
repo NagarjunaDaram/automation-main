@@ -1,6 +1,7 @@
 package com.cdi.automation.util;
 
 import java.util.ArrayList;
+
 import java.util.List;
 
 import org.springframework.stereotype.Component;
@@ -14,69 +15,81 @@ import java.util.Map;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import java.lang.reflect.Field;
+
+
+
 @Component
 public class BuildMasterJson {
 	
-public String MasterJson(List<ExcelDataModel> data, List<ExcelDataModel> organizationData,int index) {
+public String dataJson(List<String> enterpriseData, List<String> organizationData, String sourceSystemUrl) {
 		
 		String MasterJson = "";
+		//String sourceSystemUrl = "http://test-cdi-mock-server.eba-fafhacuy.ap-southeast-1.elasticbeanstalk.com/api/v1";
 		
 		MasterJson = "{"+"\"data\""+":"
 		+"{"+"\"identity\""+":"+
-				" {"+"\"id\""+":"+"\""+data.get(index).getenterpriseSystemId()+"\""+","
-		+"\"name\""+":"+"\""+data.get(index).getenterpriseSystemname()+"\""+","
-				+"\"channel_url\""+":"+"\""+data.get(index).getenterpriseEndPointUrl()+"\""+","
-		+"\"bucket_name\""+":"+"\""+data.get(index).getenterpriseS3BucketName()+"\""+","
-				+"\"public_key\""+":"+"\""+data.get(index).getPublicKey()+"\""+","
-		+"\"organization\""+":"+" {"+
-				"\"id\""+":"+"\""+data.get(index).getenterpriseOrgId()+"\""+","+
-		"\"name\""+":"+"\""+organizationData.get(index).getOrganizationName()+"\""+","+
-		"\"org_type\""+":"+"\""+organizationData.get(index).getOrganizationType()+"\""+","+
-		"\"icon_url\""+":"+"\""+organizationData.get(index).getOrganizationIconUrl()+"\""+"},"+
-		"\"source_system_config\""+":"+data.get(index).getenterpriseSystemConfig()+"},"+"\"produces\""+" :"; 
+				" {"+"\"id\""+":"+"\""+enterpriseData.get(0)+"\""+","
+		+"\"name\""+":"+"\""+enterpriseData.get(1)+"\""+","
+				+"\"channel_url\""+":"+"\""+enterpriseData.get(2)+"\""+","
+		+"\"bucket_name\""+":"+"\""+enterpriseData.get(3)+"\""+","
+				+"\"public_key\""+":"+"\""+enterpriseData.get(4)+"\""+","+"\"organization\""+":"+" {"+
+				"\"id\""+":"+"\""+organizationData.get(0)+"\""+","+
+		"\"name\""+":"+"\""+organizationData.get(1)+"\""+","+
+		"\"org_type\""+":"+"\""+organizationData.get(2)+"\""+","+
+		"\"icon_url\""+":"+"\""+organizationData.get(3)+"\""+"},"+
+		"\"source_system_config\""+":"+"{"+"url:"+"\""+sourceSystemUrl+"\""+"}"+"},"+"\"produces\""+" :"; 
 		
 		return MasterJson;
 		
 }
+
+
+
 		
 	@SuppressWarnings("unchecked")
-	public String ConfigJson(List<String> enterpriseData) {
+	public String ConfigJson(List<String> enterpriseData, List<String> organizationData) {
 		JSONObject configJson = new JSONObject();
+		String sourceSystemUrl = "http://test-cdi-mock-server.eba-fafhacuy.ap-southeast-1.elasticbeanstalk.com/api/v1";
 		
-		JSONObject data = new JSONObject();
 		JSONObject systemConfig = new JSONObject();
 		JSONObject identityInnerElement = new JSONObject();
-		JSONObject organization = new JSONObject();
-		JSONArray to = new JSONArray();
-		JSONArray onBehalfOf = new JSONArray();
-		
 		
 		identityInnerElement.put("id", enterpriseData.get(0));
 		identityInnerElement.put("name", enterpriseData.get(1));
 		identityInnerElement.put("channel_url", enterpriseData.get(2));
 		identityInnerElement.put("bucket_name", enterpriseData.get(3));
-		to.add(data);
+		identityInnerElement.put("public_key", enterpriseData.get(4));
+		JSONObject organization = new JSONObject();
+	
+			
+		organization.put("id", organizationData.get(0));
+		organization.put("name", organizationData.get(1));
+		organization.put("org_type", organizationData.get(2));
+		organization.put("icon_url", organizationData.get(3));
+		
+		systemConfig.put("url", sourceSystemUrl);
+		
+		identityInnerElement.put("organization", organization);
+		identityInnerElement.put("source_system_config", systemConfig);
+		
+		JSONObject data = new JSONObject();
+		
+	
+		data.put("identity",identityInnerElement);
 		
 		
-		/*
-		 * onBehalfofInnerElement.put("id", onBehalfOfId);
-		 * onBehalfofInnerElement.put("name", onBehalfOfName);
-		 * onBehalfofInnerElement.put("iconUrl", onBehalfOfIconUrl);
-		 * onBehalfOf.add(onBehalfofInnerElement); toInnerElement.put("on_behalf_of",
-		 * onBehalfOf);
-		 * 
-		 * toSystem.put("id", systemid); toSystem.put("name", systemName);
-		 * 
-		 * toInnerElement.put("system", toSystem);
-		 * 
-		 * 
-		 * System.out.println(toInnerElement);
-		 */
+		
 		
 		configJson.put("data", data);
 		
 		
-		return configJson.toString();
+		
+		String jsonStr = new com.google.gson.Gson().toJson(configJson);
+		
+		
+		//return configJson.toString();
+		return jsonStr;
 	}
 
 

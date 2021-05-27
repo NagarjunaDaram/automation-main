@@ -22,7 +22,7 @@ public class ExcelDataModel implements Serializable{
 	
 	private String enterpriseSystemId;
 	private String enterpriseSystemName;
-	private String enterpriseEndPointUrl;
+	private String enterpriseendPointUrl;
 	private String enterpriseS3BucketName;
 	private String enterprisePublicKey;
 	private String enterpriseOrgId;
@@ -50,14 +50,17 @@ public class ExcelDataModel implements Serializable{
 		this.enterpriseSystemName = enterpriseSystemName;
 	}
 	
-	public String getenterpriseEndPointUrl() {
-		return enterpriseEndPointUrl;
-	}
 	
-	public void setEnterpriseEndPointUrl(String enterpriseEndPointURL) {
-		this.enterpriseEndPointUrl = enterpriseEndPointUrl;
-	}
 	
+
+	public String getEnterpriseendPointUrl() {
+		return enterpriseendPointUrl;
+	}
+
+	public void setEnterpriseendPointUrl(String enterpriseendPointUrl) {
+		this.enterpriseendPointUrl = enterpriseendPointUrl;
+	}
+
 	public String getPublicKey() {
 		return enterprisePublicKey;
 	}
