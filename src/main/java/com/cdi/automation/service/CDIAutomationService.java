@@ -101,6 +101,9 @@ public class CDIAutomationService {
 	@Value("${sourceSystemConfigUrl}")
 	public String sourceSystemUrl;
 	
+	@Value("${SwaggerRequestBodyUrl}")
+	public String requestBodyendpoint;
+	
 	@SuppressWarnings("unchecked")
 	public  String functionaltest() {
 		String response =null;
@@ -444,6 +447,52 @@ public class CDIAutomationService {
 					masterJson = dataJson+producesContent+consumesContent;
 					//System.out.println("Master Json is "+masterJson);
 					
+					String configUrl = testURL+"v1/config";
+					requestHeaders.set("Authorization", "Bearer "+testtoken);
+					String confiapiresponse =	connectionUtil.callGetRestService(configUrl,  requestHeaders);
+					System.out.println("Health API Response:"+configUrl+"\n"+confiapiresponse);
+					if (configResponse.isEmpty()) {
+						System.out.println("Config Check for Pitstop"+configUrl+"Failed:No Further tests will be executed");
+						
+						continue;
+					}
+					/*Check the Data Elements for the same provider*/
+					else {
+						for (int x =0; x < providerDataElement.size(); x ++) {
+							String DataElement = providerDataElement.get(x);
+							String RequestBody = getSwaggerRequestBody(DataElement, SwaggerUCCUrl, "push");
+							HttpHeaders SwaggerRequestHeaders = new HttpHeaders();
+							SwaggerRequestHeaders.set("Authorization", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNkaS1tb2NrIiwiaWF0IjoxNjE4NDcyODc1fQ.lhIFuqAOIAkuniIiNrDFgvHyPJqqDqBl0NWswUNCZHA");
+							String DataElementRequestBody = connectionUtil.callPostRestService(SwaggerSchemaUrl, RequestBody, SwaggerRequestHeaders);
+							String datacheckurl = testURL+"v1/data/push"+DataElement;
+							requestHeaders.set("Authorization", "Bearer "+testtoken);
+							String datarequestResponse =	connectionUtil.callPostRestService(datacheckurl, DataElementRequestBody, requestHeaders);
+							System.out.println("DataElement API Response:"+configUrl+"\n"+datarequestResponse);
+							if(datarequestResponse.isEmpty()) {
+								System.out.println("DataElement API Response Fails:"+configUrl+"\n"+datarequestResponse);
+								continue;
+							}
+						}
+						for (int x =0; x < subscriberDataElement.size(); x ++) {
+							String DataElement = subscriberDataElement.get(x);
+							String RequestBody = getSwaggerRequestBody(DataElement, SwaggerUCCUrl, "pull");
+							HttpHeaders SwaggerRequestHeaders = new HttpHeaders();
+							SwaggerRequestHeaders.set("Authorization", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNkaS1tb2NrIiwiaWF0IjoxNjE4NDcyODc1fQ.lhIFuqAOIAkuniIiNrDFgvHyPJqqDqBl0NWswUNCZHA");
+							String DataElementRequestBody = connectionUtil.callPostRestService(SwaggerSchemaUrl, RequestBody, SwaggerRequestHeaders);
+							String datacheckurl = testURL+"v1/data/pull"+DataElement;
+							requestHeaders.set("Authorization", "Bearer "+testtoken);
+							Gson g = new Gson();
+							String JsonReqBody = g.toJson(DataElementRequestBody);
+							
+							String datarequestResponse =	connectionUtil.callPostRestService(datacheckurl, DataElementRequestBody, requestHeaders);
+							System.out.println("DataElement API Response:"+configUrl+"\n"+datarequestResponse);
+							if(datarequestResponse.isEmpty()) {
+								System.out.println("DataElement Consumer API Response Fails:"+configUrl+"\n"+datarequestResponse);
+								continue;
+							}
+						}
+					}	
+					
 				}
 				
 				
@@ -497,6 +546,22 @@ public class CDIAutomationService {
 		schemaBody = swagger.toJSONString();
 		return schemaBody;
 	}
+	
+	@SuppressWarnings("unchecked")
+	public String getSwaggerRequestBody(String dataElement, String swaggerUrl, String action) {
+		String requestBody = null;
+		
+	
+		JSONObject swagger = new JSONObject();
+		swagger.put("swaggerUrl", swaggerUrl);
+		swagger.put("swaggerAPIKey", "8abd5281-801e-4344-afb7-49960fb24ab4");
+		swagger.put("action", action);
+		swagger.put("dataElementId", dataElement);
+		
+		requestBody = swagger.toJSONString();
+		return requestBody;
+	}
+	
 	
 	@SuppressWarnings("unchecked")
 	public String getProviderToContent(String Id, String Name, String iconUrl, String onBehalfOfId, String onBehalfOfName, String onBehalfOfIconUrl, String systemid, String systemName ) {
