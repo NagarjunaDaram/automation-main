@@ -24,6 +24,7 @@ public class ConnectionUtil {
 			HttpEntity<String> requestEntity = new HttpEntity<>(requestInJson,headers);
 			ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity,String.class);
 			if (response.getStatusCodeValue() == 200) {
+				
 				jSonresponse =response.getBody();
 			} else {
 				throw new HttpClientErrorException(response.getStatusCode(),"URL :: "+url  + "requestEntity  :: "+requestEntity );

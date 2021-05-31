@@ -14,6 +14,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import java.lang.reflect.Field;
 
@@ -54,6 +56,8 @@ public String dataJson(List<String> enterpriseData, List<String> organizationDat
 		
 		JSONObject systemConfig = new JSONObject();
 		JSONObject identityInnerElement = new JSONObject();
+		JSONArray produces = new JSONArray();
+		JSONArray consumes = new JSONArray();
 		
 		identityInnerElement.put("id", enterpriseData.get(0));
 		identityInnerElement.put("name", enterpriseData.get(1));
@@ -77,8 +81,8 @@ public String dataJson(List<String> enterpriseData, List<String> organizationDat
 		
 	
 		data.put("identity",identityInnerElement);
-		
-		
+		data.put("produces",produces);
+		data.put("consumes",consumes);
 		
 		
 		configJson.put("data", data);
@@ -90,6 +94,23 @@ public String dataJson(List<String> enterpriseData, List<String> organizationDat
 		
 		//return configJson.toString();
 		return jsonStr;
+	}
+	
+	public String ParseJson(String jsonstr) {
+		
+			JSONParser parser = new JSONParser();
+			String nameval = null;
+			try {
+				JSONObject json = (JSONObject) parser.parse(jsonstr);
+				nameval = (String) json.get("name");
+				
+			} catch (ParseException e) {
+				
+				e.printStackTrace();
+			}
+			System.out.println("Name Value from Swagger Schema is"+nameval);
+			return nameval;
+		
 	}
 
 

@@ -89,7 +89,7 @@ public class TestReport {
 
 		/*
 		 * Row row = sheet.createRow(2); Cell cell = row.createCell(0);
-		 * cell.setCellValue("John Smith"); cell.setCellStyle(style);
+		 * cell.setCellValue("test"); cell.setCellStyle(style);
 		 * 
 		 * cell = row.createCell(1); cell.setCellValue(20); cell.setCellStyle(style);
 		 */

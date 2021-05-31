@@ -37,6 +37,7 @@ import com.cdi.automation.util.BuildMasterJson;
 import com.cdi.automation.util.FlatMapUtil;
 import com.cdi.automation.util.GetJsonNode;
 import com.cdi.automation.util.TestReport;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -45,6 +46,8 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import java.time.format.DateTimeFormatter;  
 import java.time.LocalDateTime; 
 
@@ -98,6 +101,7 @@ public class CDIAutomationService {
 	@Value("${sourceSystemConfigUrl}")
 	public String sourceSystemUrl;
 	
+	@SuppressWarnings("unchecked")
 	public  String functionaltest() {
 		String response =null;
 		String masterJson = null;
@@ -110,16 +114,7 @@ public class CDIAutomationService {
 			List<TestListDataModel> testListData = getTestListData(testListSheet);
 			List<ExcelDataModel> ParticipantData = new ArrayList<ExcelDataModel>();
 			
-			List<String> providerDataElement = new ArrayList<String>();
-			List<String> providerDatElement = new ArrayList<String>();
-			List<String> providerDataIndex = new ArrayList<String>();
-			List<String> providerIndex = new ArrayList<String>();
-			
-			
-			List<String> subscriberDataElement = new ArrayList<String>();
-			List<String> subscriberDatElement = new ArrayList<String>();
-			List<String> subscriberDataIndex = new ArrayList<String>();
-			List<String> subscriberIndex = new ArrayList<String>();
+
 			//List<String> subscriberFromData = new ArrayList<String>();
 			
 
@@ -135,10 +130,13 @@ public class CDIAutomationService {
 			for (int i =0; i < countofRowsInTestListSheet; i++) {
 				String tokenUrl = null;
 				masterJson = null;
+				String producesContent = null;
+				String consumesContent = null;
 				String participantOrgId = null;
 				
+				
 				String SystemId = testListData.get(i).getTestSystemId();
-				System.out.println(SystemId);
+				//System.out.println(SystemId);
 				/*Check the Health API */
 				String testURL = testListData.get(i).getTestUrl();
 				System.out.println(testURL);
@@ -180,7 +178,7 @@ public class CDIAutomationService {
 							dataEnterpriseList.add(data.get(a).getenterpriseS3BucketName());
 							dataEnterpriseList.add(data.get(a).getPublicKey());
 							participantOrgId = data.get(a).getenterpriseOrgId();
-							System.out.println("Organization ID in Data JSOn is"+participantOrgId);
+							//System.out.println("Organization ID in Data JSOn is"+participantOrgId);
 							for (int b=0; b < countofRowsInOrganizationSheet; b++) {
 								if (participantOrgId.equals(organizationData.get(b).getOrgnizationOrgId())) {
 									dataOrganizationList.add(organizationData.get(b).getOrgnizationOrgId());
@@ -198,24 +196,29 @@ public class CDIAutomationService {
 					String dataJson = buildMasterJson.ConfigJson(dataEnterpriseList, dataOrganizationList); 
 					
 					
-					String firstreplace = dataJson.substring(0, dataJson.length() - 1); // AB
-					String replaced = firstreplace + "}";
 					
-					String secondreplace = replaced.substring(0, replaced.length() - 1); // AB
-					String datajson1 = secondreplace + "}";
-					System.out.println("Data JSON is :"+datajson1);
+					//System.out.println("Data JSON is :"+dataJson);
+					
+					List<String> providerDataElement = new ArrayList<String>();
+					List<String> providerDatElement = new ArrayList<String>();
+					List<String> providerDataIndex = new ArrayList<String>();
+					List<String> providerIndex = new ArrayList<String>();
 					
 					
+					List<String> subscriberDataElement = new ArrayList<String>();
+					List<String> subscriberDatElement = new ArrayList<String>();
+					List<String> subscriberDataIndex = new ArrayList<String>();
+					List<String> subscriberIndex = new ArrayList<String>();
 					for (int j = 0; j < countOfRowsInSubscription; j++ ) {
 						String providerSystemId = subscriptionData.get(j).getProsumerSystemId();
 						String subscriberSystemId = subscriptionData.get(j).getSubscriberSystemId();
-						//System.out.println("Prosumer System ID:"+providerSystemId);
+						
 						/*to get the what is being provided*/
 						if (providerSystemId.equals(SystemId)) {
 							String providerType = subscriptionData.get(j).getProsumerType();
 							
 							if(providerType.equals(ProvideType)) {
-								System.out.println("Prosumer Type:"+providerSystemId+providerType+"Index: "+j+subscriptionData.get(j).getDataElementId());
+								//System.out.println("Prosumer Type:"+providerSystemId+providerType+"Index: "+j+subscriptionData.get(j).getDataElementId());
 								providerDatElement.add(subscriptionData.get(j).getDataElementId());
 								providerDataIndex.add(subscriptionData.get(j).getDataElementId()+":"+j);
 								 
@@ -228,7 +231,7 @@ public class CDIAutomationService {
 							String subscriberType = subscriptionData.get(j).getProsumerType();
 							
 							if(subscriberType.equals(ProvideType)) {
-								System.out.println("Subscriber Type:"+providerSystemId+subscriberType+"Index: "+j+subscriptionData.get(j).getDataElementId());
+								//System.out.println("Subscriber Type:"+providerSystemId+subscriberType+"Index: "+j+subscriptionData.get(j).getDataElementId());
 								subscriberDatElement.add(subscriptionData.get(j).getDataElementId());
 								subscriberDataIndex.add(subscriptionData.get(j).getDataElementId()+":"+j);
 								 
@@ -240,34 +243,31 @@ public class CDIAutomationService {
 					}
 					/*Construct the Produces Structure*/
 					if(!providerDatElement.isEmpty()) {
-						System.out.println("provider List with their respective indexes"+providerIndex);
+						//System.out.println("provider List with their respective indexes"+providerIndex);
 						providerDataElement = removeDuplicates((ArrayList<String>) providerDatElement);
 						//System.out.println("ArrayList with duplicates removed: " + providerDataElement);
 						for (int k =0; k < providerDataElement.size(); k ++) {
 							List<String> providerToData = new ArrayList<String>();
+							List<String> produces = new ArrayList<String>();
+							JSONArray to = new JSONArray();
+							JSONObject toswagger = new JSONObject();
+							
 							String DataElement = providerDataElement.get(k);
 							/*Get the Swagger Schema for each Data Element*/
 							String SwaggerBody = getSwaggerSchemaBody(DataElement, SwaggerUCCUrl);
-							System.out.println("Swagger Schema Body for  " + DataElement+"\n"+SwaggerBody);
+							//System.out.println("Swagger Schema Body for  " + DataElement+"\n"+SwaggerBody);
 							HttpHeaders SwaggerSchemaHeaders = new HttpHeaders();
 							SwaggerSchemaHeaders.set("Authorization", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNkaS1tb2NrIiwiaWF0IjoxNjE4NDcyODc1fQ.lhIFuqAOIAkuniIiNrDFgvHyPJqqDqBl0NWswUNCZHA");
 							String providerSwaggerSchema = connectionUtil.callPostRestService(SwaggerSchemaUrl, SwaggerBody, SwaggerSchemaHeaders);
-							providerSwaggerSchema = providerSwaggerSchema.substring(0, providerSwaggerSchema.length() - 1) + "";
-							providerSwaggerSchema = providerSwaggerSchema.substring(0, providerSwaggerSchema.length() - 1) + "";
+							
+							providerSwaggerSchema = providerSwaggerSchema.substring( 1, providerSwaggerSchema.length() - 1 ); 
+							//System.out.println("Swagger Schema " +providerSwaggerSchema.substring( 1, providerSwaggerSchema.length() - 1 ) );
 							providerSwaggerSchema = providerSwaggerSchema+",";
+							//System.out.println("Swagger Schema " +providerSwaggerSchema);
+							//buildMasterJson.ParseJson(sb.toString());
 							
-							if(providerSwaggerSchema.contains("querySchema")) {
-								providerSwaggerSchema = providerSwaggerSchema.substring(0, providerSwaggerSchema.length() - 1) + "";
-								providerSwaggerSchema = providerSwaggerSchema.substring(0, providerSwaggerSchema.length() - 1) + ",";
-								
-							}
-							else{
-								providerSwaggerSchema = providerSwaggerSchema.substring(0, providerSwaggerSchema.length() - 1) + ",";
-								
-							}
-							//Thread.sleep(6000);
-							//System.out.println("Swagger Schema :"+DataElement+"\n"+providerSwaggerSchema);
-							
+
+																					
 							providerIndex = getMatchingElements(DataElement, providerDataIndex);
 							String subscriberOrgName = null;
 							String subscriberOrgIconUrl = null;
@@ -278,12 +278,22 @@ public class CDIAutomationService {
 							String SubscriberOrgId = null;
 							String subscriberEnterpriseSystemID = null;
 							String subscriberEnterpriseSystemName = null;
-							System.out.println("provider index"+providerIndex);
+							//System.out.println("provider index"+providerIndex);
 							for (int n =0; n < providerIndex.size(); n++) {
 								String parts [] = providerIndex.get(n).split(":");
 								int index = Integer.parseInt(parts[1]);
 								SubscriberOrgId = subscriptionData.get(index).getSubscriberOrgId();
 								ProsumerOrgId = subscriptionData.get(index).getProsumerOrgId();
+								
+								for (int d=0; d<countofRowsInEnterpriseSheet;d++) {
+									String enterpriseOrganizationId = data.get(d).getenterpriseOrgId();
+									//System.out.println("System info enterpriseOrg Id "+enterpriseOrganizationId);
+									if(SubscriberOrgId.equals(enterpriseOrganizationId)) {
+											subscriberEnterpriseSystemID = data.get(d).getenterpriseSystemId();
+											subscriberEnterpriseSystemName = data.get(d).getenterpriseSystemname();
+										}
+									}
+								
 								for (int m =0; m < countofRowsInOrganizationSheet; m ++) {
 									if(SubscriberOrgId.equals(organizationData.get(m).getOrgnizationOrgId())) {
 										subscriberOrgName = organizationData.get(m).getOrganizationName();
@@ -301,23 +311,26 @@ public class CDIAutomationService {
 													subscriberonbehalfOfIconurl = organizationData.get(o).getOrganizationIconUrl();
 												}
 											}
-											for (int d=0; d<countofRowsInEnterpriseSheet;d++) {
-												if(ProsumerOrgId.equals(data.get(d).getenterpriseOrgId())) {
-													subscriberEnterpriseSystemID = data.get(d).getenterpriseSystemId();
-													subscriberEnterpriseSystemName = data.get(d).getenterpriseSystemname();
-												}
-											}
+								
 											
 										}
 										
 									}
 								}
 								String dataElementToContent = getProviderToContent(SubscriberOrgId,subscriberOrgName, subscriberOrgIconUrl, subscriberonbehalfOfId, subscriberonbehalfOfName, subscriberonbehalfOfIconurl,subscriberEnterpriseSystemID, subscriberEnterpriseSystemName); 
-								System.out.println("Provider To Content is "+dataElementToContent);
+								//System.out.println("Provider To Content is "+dataElementToContent);
 								providerToData.add(dataElementToContent);
 							}
 							
-							System.out.println("Provider To Content is"+providerToData);
+							
+							
+							//System.out.println("Provider To Content is"+providerToData);
+							for (int p =0; p < providerToData.size(); p++) {
+								to.add(providerToData.get(p));
+							}
+							
+							toswagger.put("to", to);
+							System.out.println("Provider To Content is"+toswagger);
 							  //String res = buildMasterJson.MasterJson(data , i); 
 							  //masterJson = res+providerSwaggerSchema; 
 							  //System.out.println(masterJson);
@@ -334,26 +347,23 @@ public class CDIAutomationService {
 						
 						for (int k =0; k < subscriberDataElement.size(); k ++) {
 							List<String> subscriberFromData = new ArrayList<String>();
+							List<String> consumes = new ArrayList<String>();
+							JSONArray from = new JSONArray();
+							JSONObject fromswagger = new JSONObject();
 							String DataElement = subscriberDataElement.get(k);
 							String SwaggerBody = getSwaggerSchemaBody(DataElement, SwaggerUCCUrl);
-							System.out.println("Swagger Schema Body for  " + DataElement+"\n"+SwaggerBody);
+							//System.out.println("Swagger Schema Body for  " + DataElement+"\n"+SwaggerBody);
 							HttpHeaders SwaggerSchemaHeaders = new HttpHeaders();
 							SwaggerSchemaHeaders.set("Authorization", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNkaS1tb2NrIiwiaWF0IjoxNjE4NDcyODc1fQ.lhIFuqAOIAkuniIiNrDFgvHyPJqqDqBl0NWswUNCZHA");
 							String consumerSwaggerSchema = connectionUtil.callPostRestService(SwaggerSchemaUrl, SwaggerBody, SwaggerSchemaHeaders);
-							if(consumerSwaggerSchema.contains("querySchema")) {
-								consumerSwaggerSchema = consumerSwaggerSchema.substring(0, consumerSwaggerSchema.length() - 1) + "";
-								consumerSwaggerSchema = consumerSwaggerSchema.substring(0, consumerSwaggerSchema.length() - 1) + ",";
-								
-							}
-							else{
-								consumerSwaggerSchema = consumerSwaggerSchema.substring(0, consumerSwaggerSchema.length() - 1) + ",";
-								
-							}
+							consumerSwaggerSchema = consumerSwaggerSchema.substring( 1, consumerSwaggerSchema.length() - 1 ); 
+							//System.out.println("Swagger Schema " +providerSwaggerSchema.substring( 1, providerSwaggerSchema.length() - 1 ) );
+							consumerSwaggerSchema = consumerSwaggerSchema+",";
 							
 							//consumerSwaggerSchema = consumerSwaggerSchema.substring(0, consumerSwaggerSchema.length() - 1) + "";
 							//consumerSwaggerSchema = consumerSwaggerSchema+",";
 							//Thread.sleep(6000);
-							System.out.println("Swagger Schema :"+DataElement+"\n"+consumerSwaggerSchema);
+							//System.out.println("Swagger Schema :"+DataElement+"\n"+consumerSwaggerSchema);
 							/*
 							 * String res = buildMasterJson.MasterJson(data , i); masterJson =
 							 * res+consumerSwaggerSchema; System.out.println(masterJson);
@@ -375,9 +385,17 @@ public class CDIAutomationService {
 								String parts[] = subscriberIndex.get(l).split(":");
 								int index = Integer.parseInt(parts[1]);
 							     
-								System.out.println("Indexex of each element"+ parts[1]);
+								//System.out.println("Indexex of each element"+ parts[1]);
 								ProsumerOrgId = subscriptionData.get(index).getProsumerOrgId();
 								SubscriberOrgId = subscriptionData.get(index).getSubscriberOrgId();
+								
+								for (int c=0; c<countofRowsInEnterpriseSheet;c++) {
+									if(ProsumerOrgId.equals(data.get(c).getenterpriseOrgId())) {
+										
+										EnterpriseSystemID = data.get(c).getenterpriseSystemId();
+										EnterpriseSystemName = data.get(c).getenterpriseSystemname();
+									}
+								}
 								
 								
 								for (int m =0; m < countofRowsInOrganizationSheet; m ++) {
@@ -397,12 +415,7 @@ public class CDIAutomationService {
 													onbehalfOfIconurl = organizationData.get(n).getOrganizationIconUrl();
 												}
 											}
-											for (int c=0; c<countofRowsInEnterpriseSheet;c++) {
-												if(ProsumerOrgId.equals(data.get(c).getenterpriseOrgId())) {
-													EnterpriseSystemID = data.get(c).getenterpriseSystemId();
-													EnterpriseSystemName = data.get(c).getenterpriseSystemname();
-												}
-											}
+											
 											
 										}
 										
@@ -410,18 +423,26 @@ public class CDIAutomationService {
 								}
 										
 								String dataElementFromContent = getConsumerFromContent(ProsumerOrgId,ProsumerOrgName, ProsumerOrgIconUrl, onbehalfOfId, onbehalfOfName, onbehalfOfIconurl,EnterpriseSystemID, EnterpriseSystemName); 
-								System.out.println("Consumer From Content is "+dataElementFromContent);
+								//System.out.println("Consumer From Content is "+dataElementFromContent);
 								subscriberFromData.add(dataElementFromContent);
+								for (int f =0; f < subscriberFromData.size(); f++) {
+									from.add(subscriberFromData.get(f));
+								}
+								
+								
 										
 							}
+							fromswagger.put("from", from);
+							System.out.println("Provider To Content is"+fromswagger);
 							
-							System.out.println("Consumer From Content is "+subscriberFromData);
+							//System.out.println("Consumer From Content is "+subscriberFromData);
 							
 						}
 						
 					}
 
-					
+					masterJson = dataJson+producesContent+consumesContent;
+					//System.out.println("Master Json is "+masterJson);
 					
 				}
 				
@@ -438,10 +459,10 @@ public class CDIAutomationService {
 			e.printStackTrace();
 			
 		}
-		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HHmmss");
 		LocalDateTime now = LocalDateTime.now();
 		String currentdatetime = dtf.format(now);
-		String ReportFilename = "Automation_Report_"+currentdatetime;
+		String ReportFilename = "Automation_Report_"+currentdatetime+".xlsx";
 		TestReport.GenerateReport(ReportFilename);
 		
 		return response;
@@ -510,7 +531,7 @@ public class CDIAutomationService {
 		toInnerElement.put("system", toSystem);
 		 
 		  
-		System.out.println(toInnerElement);
+		//System.out.println(toInnerElement);
 
 		 
 		
@@ -523,9 +544,9 @@ public class CDIAutomationService {
 		//system.add(toSystem);
 		//to.add(onBehalfOf);
 		//to.add(system);
-		swagger.put("to", to);
+		//swagger.put("to", to);
 		
-		return swagger.toString();
+		return toInnerElement.toString();
 		
 		
 		
@@ -567,7 +588,7 @@ public class CDIAutomationService {
 		fromInnerElement.put("system", toSystem);
 		 
 		  
-		System.out.println(fromInnerElement);
+		//System.out.println(fromInnerElement);
 
 		 
 		
@@ -580,9 +601,9 @@ public class CDIAutomationService {
 		//system.add(toSystem);
 		//to.add(onBehalfOf);
 		//to.add(system);
-		swagger.put("from", from);
+		//swagger.put("from", from);
 		
-		return swagger.toString();
+		return fromInnerElement.toString();
 		
 		
 		
